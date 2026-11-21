@@ -67,7 +67,7 @@ export async function getBookById(id) {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
             const book = books.filter((book) => book.id == id)
-            resolve(book ? {...book} : null)
+            resolve(book ? {...book} : null )
         }, 500);
     })
 }

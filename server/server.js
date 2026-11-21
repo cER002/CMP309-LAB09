@@ -1,10 +1,10 @@
 import express from 'express'
 import cors from 'cors'
 import { getAllBooks, getBookById } from './booksStore.js'
-import { parseId } from './validate.js'
+import { parseId, parseQuery } from './validate.js'
 
 const PORT = process.env.PORT ?? 3000
-const allowed = process.env.CLIENT_ORIGIN ?? 'https://localhost:5173'
+const allowed = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173'
 
 const app = express()
 
@@ -12,8 +12,36 @@ app.use(cors({ origin: allowed }))
 app.use(express.json())
 
 app.get('/api/books', async (req, res) => {
-    const books = await getAllBooks()
-    res.json(books)
+    const { error, options } = parseQuery(req.query)
+    if (error) {
+        return res.status(400).json({ error })
+    }
+    const { genre, read, q, sort, order, limit, page } = options
+
+    const all = await getAllBooks()
+
+    const filtered = all.filter(b =>
+        (genre === undefined || b.genre === genre) &&
+        (read === undefined || b.read === read) &&
+        (q === undefined ||
+            b.title.toLowerCase().includes(q) ||
+            b.author.toLowerCase().includes(q))
+    )
+
+    const dir = order === "asc" ? 1 : -1
+    const sorted = [...filtered].sort((a, b) => {
+        if (sort === "rating") {
+            if (a.rating === null && b.rating === null) return 0
+            if (a.rating === null) return 1
+            if (b.rating === null) return -1
+        }
+        const x = a[sort], y = b[sort]
+        const cmp = typeof x === "string" ? x.localeCompare(y) : x - y
+        return cmp * dir
+    })
+
+    const start = (page - 1) * limit
+    res.json(sorted.slice(start, start + limit))
 })
 
 app.get('/api/books/:id', async (req, res) => {
@@ -26,8 +54,9 @@ app.get('/api/books/:id', async (req, res) => {
 
     const book = await getBookById(id)
 
-    if(!book) {
+    if (!book) {
         res.status(404).json({ "error": "Book id does not exist" })
+        return
     }
 
     res.json(book)
