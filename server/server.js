@@ -96,7 +96,6 @@ app.patch('/api/books/:id', async (req, res) => {
     const existing = await getBookById(id)
     if (!existing) return res.status(404).json({ error: "Book id does not exist" })
 
-    // existing values + the changes, then validate the whole thing
     const { error, book } = validateBook({ ...existing, ...req.body })
     if (error) return res.status(400).json({ error })
 
@@ -114,6 +113,29 @@ app.delete('/api/books/:id', async (req, res) => {
         return res.status(404).json({ error: "Book id does not exist" })
 
     res.status(204).end()
+})
+
+app.get('/api/stats', async (req, res) => {
+    const all = await getAllBooks()
+
+    const read = all.filter(b => b.read).length
+    const ratings = all.filter(b => b.rating !== null).map(b => b.rating)
+    const averageRating = ratings.length
+        ? Math.round((ratings.reduce((sum, r) => sum + r, 0) / ratings.length) * 10) / 10
+        : null
+
+    const byGenre = {}
+    for (const b of all) {
+        byGenre[b.genre] = (byGenre[b.genre] ?? 0) + 1
+    }
+
+    res.json({
+        total: all.length,
+        read,
+        unread: all.length - read,
+        averageRating,
+        byGenre,
+    })
 })
 
 app.listen(PORT, () => {
