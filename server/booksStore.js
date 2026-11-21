@@ -82,3 +82,19 @@ export async function createBook(data) {
     books = [...books, book]
     return book
 }
+
+export async function updateBook(id, data) {
+    await new Promise(r => setTimeout(r, 10))
+    const existing = books.find(b => b.id === id)
+    if (!existing) return null
+    const updated = { ...existing, ...data, id }
+    books = books.map(b => (b.id === id ? updated : b))   // new array
+    return updated
+}
+
+export async function deleteBook(id) {
+    await new Promise(r => setTimeout(r, 10))
+    if (!books.some(b => b.id === id)) return false
+    books = books.filter(b => b.id !== id)   // new array
+    return true
+}
