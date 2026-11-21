@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
-import { getAllBooks, getBookById } from './booksStore.js'
-import { parseId, parseQuery } from './validate.js'
+import { getAllBooks, getBookById, findDuplicate, createBook } from './booksStore.js'
+import { parseId, parseQuery, validateBook } from './validate.js'
 
 const PORT = process.env.PORT ?? 3000
 const allowed = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173'
@@ -60,6 +60,17 @@ app.get('/api/books/:id', async (req, res) => {
     }
 
     res.json(book)
+})
+
+app.post('/api/books', async (req, res) => {
+    const { error, book } = validateBook(req.body)
+    if (error) return res.status(400).json({ error })
+
+    if (await findDuplicate(book.title, book.author))
+        return res.status(409).json({ error: "a book with this title and author already exists" })
+
+    const created = await createBook(book)
+    res.status(201).location(`/api/books/${created.id}`).json(created)
 })
 
 app.listen(PORT, () => {

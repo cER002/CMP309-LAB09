@@ -50,3 +50,33 @@ export function parseQuery(query) {
         },
     }
 }
+
+const currentYear = new Date().getFullYear()
+
+export function validateBook(body) {
+    if (typeof body !== "object" || body === null || Array.isArray(body))
+        return { error: "body must be a JSON object" }
+
+    const title = typeof body.title === "string" ? body.title.trim() : ""
+    const author = typeof body.author === "string" ? body.author.trim() : ""
+    const { year, genre } = body
+    const read = body.read ?? false
+    const rating = body.rating ?? null
+
+    if (title.length < 1 || title.length > 100)
+        return { error: "title must be 1 to 100 characters" }
+    if (author.length < 1 || author.length > 100)
+        return { error: "author must be 1 to 100 characters" }
+    if (!Number.isInteger(year) || year < 1000 || year > currentYear)
+        return { error: `year must be an integer from 1000 to ${currentYear}` }
+    if (!GENRES.has(genre))
+        return { error: `genre must be one of: ${[...GENRES].join(", ")}` }
+    if (typeof read !== "boolean")
+        return { error: "read must be true or false" }
+    if (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5))
+        return { error: "rating must be an integer from 1 to 5, or null" }
+    if (rating !== null && !read)
+        return { error: "rating is only allowed when read is true" }
+
+    return { book: { title, author, year, genre, read, rating } }
+}

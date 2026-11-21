@@ -1,4 +1,4 @@
-const books = [
+let books = [
     {
         id: 1,
         title: "The Hunger Games",
@@ -55,19 +55,30 @@ const books = [
     }
 ]
 
+let nextId = 7
+
 export async function getAllBooks() {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            resolve([...books])
-        }, 1000)
-    })
+    await new Promise(r => setTimeout(r, 10))
+    return [...books]
 }
 
 export async function getBookById(id) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const book = books.filter((book) => book.id == id)
-            resolve(book ? {...book} : null )
-        }, 500);
-    })
+    await new Promise(r => setTimeout(r, 10))
+    const book = books.find(b => b.id === id)
+    return book ? { ...book } : null
+}
+
+export async function findDuplicate(title, author, ignoreId) {
+    await new Promise(r => setTimeout(r, 10))
+    return books.find(b =>
+        b.id !== ignoreId &&
+        b.title.toLowerCase() === title.toLowerCase() &&
+        b.author.toLowerCase() === author.toLowerCase())
+}
+
+export async function createBook(data) {
+    await new Promise(r => setTimeout(r, 10))
+    const book = { id: nextId++, ...data }
+    books = [...books, book]
+    return book
 }
