@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import './App.css'
 import { useEffect } from 'react'
-import { listBooks, getStats, patchBook, deleteBook } from './api/books.js'
+import { listBooks, getStats, patchBook, deleteBook, createBook, replaceBook } from './api/books.js'
 import { useReducer } from 'react'
 import Filter from './components/Filter.jsx'
 import Stats from './components/Stats.jsx'
 import BookList from './components/BookList.jsx'
+import BookForm from './components/BookForm.jsx'
 
 function reducer(state, action) {
   switch (action.type) {
@@ -26,6 +27,10 @@ function App() {
   const [stats, setStats] = useState(null)
   const [reloadKey, setRealoadKey] = useState(0)
   const [actionError, setActionError] = useState(null)
+  const [editing, setEditing] = useState(null)
+  const [formKey, setFormKey] = useState(0)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState(null)
 
   async function runAction(action) {
     setActionError(null)
@@ -51,7 +56,31 @@ function App() {
   }
 
   function handleEdit(book) {
-    console.log("edit", book)
+    setEditing(book)
+    setFormError(null)
+    setFormKey(k => k + 1)
+  }
+
+  function handleCancel() {
+    setEditing(null)
+    setFormError(null)
+    setFormKey(k => k + 1)
+  }
+
+  async function handleSave(fields) {
+    setSubmitting(true)
+    setFormError(null)
+    try {
+      if (editing) await replaceBook(editing.id, fields)
+      else await createBook(fields)
+      setEditing(null)
+      setFormKey(k => k + 1)
+      setRealoadKey(k => k + 1)
+    } catch (e) {
+      setFormError(e.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   useEffect(() => {
@@ -67,7 +96,7 @@ function App() {
   }, [reloadKey])
 
   function handleFilterChange(key, value) {
-    setFilters({ ...filters, [key]: value })
+    setFilters(prev => ({ ...prev, [key]: value }))
   }
 
   useEffect(() => {
@@ -91,6 +120,7 @@ function App() {
   if (bookState.loading) content = <p>Loading...</p>
   else if (bookState.error) content = <p>error: {error}</p>
   else if (bookState.data.length === 0) content = <p>No books found</p>
+  else if (bookState.error) content = <p>error: {bookState.error}</p>
   else content = <BookList
     books={bookState.data}
     onToggleRead={handleToggleRead}
@@ -102,6 +132,14 @@ function App() {
   return (
     <div>
       <Stats stats={stats} />
+      <BookForm
+        key={formKey}
+        initialBook={editing}
+        onSubmit={handleSave}
+        onCancel={handleCancel}
+        submitting={submitting}
+        error={formError}
+      />
       <Filter filters={filters} onChange={handleFilterChange} />
       {actionError && <p>Error: {actionError}</p>}
       {content}
