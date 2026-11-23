@@ -37,6 +37,6 @@ export function listBooks(filters, signal) {
 
 export const getStats = (signal) => request("/stats", { signal })
 export const createBook = (book) => request("/books", { method: "POST", body: book })
-export const replaceBook = (id, book) => request(`/books${id}`, { method: "PUT", body: book })
-export const patchBook = (id, changes) => request(`/books${id}`, { method: "PATCH", body: changes })
+export const replaceBook = (id, book) => request(`/books/${id}`, { method: "PUT", body: book })
+export const patchBook = (id, changes) => request(`/books/${id}`, { method: "PATCH", body: changes })
 export const deleteBook = (id) => request(`/books/${id}`, { method: "DELETE" })

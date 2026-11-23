@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import './App.css'
 import { useEffect } from 'react'
-import { listBooks, getStats } from './api/books.js'
+import { listBooks, getStats, patchBook, deleteBook } from './api/books.js'
 import { useReducer } from 'react'
 import Filter from './components/Filter.jsx'
 import Stats from './components/Stats.jsx'
+import BookList from './components/BookList.jsx'
 
 function reducer(state, action) {
   switch (action.type) {
@@ -24,21 +25,49 @@ function App() {
   })
   const [stats, setStats] = useState(null)
   const [reloadKey, setRealoadKey] = useState(0)
+  const [actionError, setActionError] = useState(null)
+
+  async function runAction(action) {
+    setActionError(null)
+    try {
+      await action()
+      setRealoadKey(k => k + 1)
+    } catch (e) {
+      setActionError(e.message)
+    }
+  }
+
+  function handleToggleRead(book) {
+    const changes = book.read ? { read: false, rating: null } : { read: true }
+    runAction(() => patchBook(book.id, changes))
+  }
+
+  function handleRate(book, value) {
+    runAction(() => patchBook(book.id, { rating: value === "" ? null : Number(value) }))
+  }
+
+  function handleDelete(book) {
+    runAction(() => deleteBook(book.id))
+  }
+
+  function handleEdit(book) {
+    console.log("edit", book)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
 
     getStats(controller.signal)
-    .then(setStats)
-    .catch(err => {
-      if (err.name !== "AbortError") console.log(err.message)
-    })
+      .then(setStats)
+      .catch(err => {
+        if (err.name !== "AbortError") console.log(err.message)
+      })
 
     return () => controller.abort()
   }, [reloadKey])
 
   function handleFilterChange(key, value) {
-    setFilters({...filters, [key]: value})    
+    setFilters({ ...filters, [key]: value })
   }
 
   useEffect(() => {
@@ -62,16 +91,19 @@ function App() {
   if (bookState.loading) content = <p>Loading...</p>
   else if (bookState.error) content = <p>error: {error}</p>
   else if (bookState.data.length === 0) content = <p>No books found</p>
-  else content = <ul>
-    {bookState.data.map(book => (
-      <li key={book.id}>{book.title} by {book.author} ({book.year})</li>
-    ))}
-  </ul>
+  else content = <BookList
+    books={bookState.data}
+    onToggleRead={handleToggleRead}
+    onRate={handleRate}
+    onEdit={handleEdit}
+    onDelete={handleDelete}
+  />
 
   return (
     <div>
       <Stats stats={stats} />
-      <Filter filters={filters} onChange={handleFilterChange}/>
+      <Filter filters={filters} onChange={handleFilterChange} />
+      {actionError && <p>Error: {actionError}</p>}
       {content}
     </div>
   )
