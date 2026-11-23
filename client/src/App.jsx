@@ -118,7 +118,6 @@ function App() {
   let content
 
   if (bookState.loading) content = <p>Loading...</p>
-  else if (bookState.error) content = <p>error: {error}</p>
   else if (bookState.data.length === 0) content = <p>No books found</p>
   else if (bookState.error) content = <p>error: {bookState.error}</p>
   else content = <BookList
