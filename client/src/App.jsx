@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import './App.css'
 import { useEffect } from 'react'
-import { listBooks } from './api/books.js'
+import { listBooks, getStats } from './api/books.js'
 import { useReducer } from 'react'
 import Filter from './components/Filter.jsx'
+import Stats from './components/Stats.jsx'
 
 function reducer(state, action) {
   switch (action.type) {
@@ -21,6 +22,20 @@ function App() {
     data: null,
     error: null
   })
+  const [stats, setStats] = useState(null)
+  const [reloadKey, setRealoadKey] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    getStats(controller.signal)
+    .then(setStats)
+    .catch(err => {
+      if (err.name !== "AbortError") console.log(err.message)
+    })
+
+    return () => controller.abort()
+  }, [reloadKey])
 
   function handleFilterChange(key, value) {
     setFilters({...filters, [key]: value})    
@@ -39,7 +54,7 @@ function App() {
       })
 
     return () => controller.abort()
-  }, [filters])
+  }, [filters, reloadKey])
 
 
   let content
@@ -55,6 +70,7 @@ function App() {
 
   return (
     <div>
+      <Stats stats={stats} />
       <Filter filters={filters} onChange={handleFilterChange}/>
       {content}
     </div>
